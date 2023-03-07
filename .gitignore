@@ -1,0 +1,12 @@
+# 
+/.DS_Store
+/.idea
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
