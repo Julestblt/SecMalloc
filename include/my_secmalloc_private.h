@@ -18,6 +18,4 @@ typedef struct s_block
 
 #define BLOCK_SIZE (sizeof(t_block))
 
-#define CANARY_SIZE (sizeof(unsigned long))
-
 #endif

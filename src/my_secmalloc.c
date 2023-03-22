@@ -7,7 +7,7 @@
 t_block *g_base = NULL;
 
 // Fonction qui permet de générer un canary aléatoire.
-CANARY_SIZE generate_canary()
+unsigned long generate_canary()
 {
     return (rand() % 1000000);
 }
@@ -18,7 +18,7 @@ t_block *find_free_block(t_block **last, size_t size)
     // On parcours la liste chainée jusqu'à trouver un bloc libre de la taille demandée.
     t_block *current = g_base;
     // On stocke le dernier bloc pour pouvoir le lier au nouveau bloc.
-    while (current && !(current->free && current->size >= (size + CANARY_SIZE)))
+    while (current && !(current->free && current->size >= (size + sizeof(unsigned long))))
     {
         // On stocke le dernier bloc pour pouvoir le lier au nouveau bloc.
         *last = current;
@@ -64,7 +64,7 @@ void *my_malloc(size_t size)
     // On vérifie que la taille demandée est valide.
     if (size <= 0)
     {
-        return NULL;
+        return (NULL);
     }
 
     // On vérifie si la liste chainée est vide.
@@ -106,13 +106,16 @@ void *my_malloc(size_t size)
             // On vérifie que l'allocation s'est bien passée, sinon on retourne NULL.
             if (!free_block)
             {
-                return NULL;
+                return (NULL);
             }
+
+            // On retourne l'adresse de la mémoire allouée.
+            return (free_block->ptr);
         }
     }
 
     // On retourne l'adresse de la mémoire allouée.
-    return (free_block->ptr);
+    return (g_base->ptr);
 }
 
 void my_free(void *ptr)
