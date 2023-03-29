@@ -120,7 +120,45 @@ void *my_malloc(size_t size)
 
 void my_free(void *ptr)
 {
-    (void)ptr;
+    // On vérifie que le pointeur est valide.
+    if (!ptr)
+    {
+        /**
+         * Pointeur invalide.
+         * TODO: DEBUG LOG FILE
+         * */
+        return;
+    }
+
+    t_block *current = g_base;
+
+    // On parcours la liste chainée jusqu'à trouver le bloc correspondant au pointeur.
+    while (current && current->ptr != ptr)
+    {
+        current = current->next;
+    }
+
+    // On vérifie que le bloc a été trouvé.
+    if (current)
+    {
+        // On libère le bloc.
+        current->free = 1;
+
+        /**
+         * TODO: Implémenter le check du canary.
+         */
+
+        // On libère la mémoire du bloc.
+        munmap(current, current->size + BLOCK_SIZE);
+
+        return;
+    }
+
+    /**
+     * Pointeur invalide.
+     * TODO: DEBUG LOG FILE
+     * */
+    return;
 }
 
 void *my_calloc(size_t nmemb, size_t size)
