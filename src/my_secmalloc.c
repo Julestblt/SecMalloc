@@ -125,9 +125,32 @@ void my_free(void *ptr)
 
 void *my_calloc(size_t nmemb, size_t size)
 {
-    (void)nmemb;
-    (void)size;
-    return NULL;
+    // On vérifie que la taille demandée est valide.
+    if (nmemb == 0 || size == 0)
+    {
+        return (NULL);
+    }
+
+    // On calcule la taille totale de la mémoire à allouer.
+    size_t total_size = nmemb * size;
+
+    // On alloue de la mémoire.
+    void *ptr = my_malloc(total_size);
+
+    // On vérifie que l'allocation s'est bien passée.
+    if (ptr == NULL)
+    {
+        return (NULL);
+    }
+
+    // On initialise la mémoire à 0.
+    for (size_t i = 0; i < total_size; i++)
+    {
+        ((char *)ptr)[i] = 0;
+    }
+
+    // On retourne l'adresse de la mémoire allouée.
+    return (ptr);
 }
 
 void *my_realloc(void *ptr, size_t size)
