@@ -131,10 +131,12 @@ void my_free(void *ptr)
     }
 
     t_block *current = g_base;
+    t_block *previous = NULL;
 
     // On parcours la liste chainée jusqu'à trouver le bloc correspondant au pointeur.
     while (current && current->ptr != ptr)
     {
+        previous = current;
         current = current->next;
     }
 
@@ -147,6 +149,16 @@ void my_free(void *ptr)
         /**
          * TODO: Implémenter le check du canary.
          */
+
+        // On met à jour la liste chaînée en supprimant le bloc libéré.
+        if (previous)
+        {
+            previous->next = current->next;
+        }
+        else
+        {
+            g_base = current->next;
+        }
 
         // On libère la mémoire du bloc.
         munmap(current, current->size + BLOCK_SIZE);
