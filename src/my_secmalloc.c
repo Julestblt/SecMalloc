@@ -132,9 +132,37 @@ void *my_calloc(size_t nmemb, size_t size)
 
 void *my_realloc(void *ptr, size_t size)
 {
-    (void)ptr;
-    (void)size;
-    return NULL;
+    // On vérifie que la taille demandée est valide.
+    if (size <= 0)
+    {
+        return (NULL);
+    }
+
+    // On vérifie que l'adresse de la mémoire à réallouer est valide.
+    if (!ptr)
+    {
+        return (NULL);
+    }
+
+    // On alloue la mémoire avec my_malloc.
+    void *new_ptr = my_malloc(size);
+
+    // On vérifie que l'allocation s'est bien passée, sinon on retourne NULL.
+    if (!new_ptr)
+    {
+        return (NULL);
+    }
+
+    // On copie les données de l'ancienne mémoire vers la nouvelle.
+    for (size_t i = 0; i < size; i++)
+    {
+        ((char *)new_ptr)[i] = ((char *)ptr)[i];
+    }
+
+    // On libère l'ancienne mémoire.
+    my_free(ptr);
+
+    return (new_ptr);
 }
 
 #ifdef DYNAMIC
