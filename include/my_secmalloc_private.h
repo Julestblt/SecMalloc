@@ -18,4 +18,6 @@ typedef struct s_block
 
 #define BLOCK_SIZE (sizeof(t_block))
 
+#define CANARY_VALUE 0x1234567890ABCDEF
+
 #endif

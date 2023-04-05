@@ -6,12 +6,6 @@
 
 t_block *g_base = NULL;
 
-// Fonction qui permet de générer un canary aléatoire.
-unsigned long generate_canary()
-{
-    return (rand() % 1000000);
-}
-
 // Fonction qui permet de trouver un bloc libre de la taille demandée.
 t_block *find_free_block(t_block **last, size_t size)
 {
@@ -47,7 +41,7 @@ t_block *request_space(t_block *last, size_t size)
     new_block->next = NULL;
     new_block->free = 0;
     new_block->ptr = new_block->data;
-    new_block->canary = generate_canary();
+    new_block->canary = CANARY_VALUE;
 
     // On lie le nouveau bloc au dernier bloc.
     if (last)
@@ -131,6 +125,7 @@ void my_free(void *ptr)
     }
 
     t_block *current = g_base;
+
     t_block *previous = NULL;
 
     // On parcours la liste chainée jusqu'à trouver le bloc correspondant au pointeur.
@@ -143,12 +138,18 @@ void my_free(void *ptr)
     // On vérifie que le bloc a été trouvé.
     if (current)
     {
+        // Vérification du canari.
+        if (current->canary != CANARY_VALUE)
+        {
+            /**
+             * Corruption de la mémoire détectée.
+             * TODO: DEBUG LOG FILE
+             * */
+            return;
+        }
+
         // On libère le bloc.
         current->free = 1;
-
-        /**
-         * TODO: Implémenter le check du canary.
-         */
 
         // On met à jour la liste chaînée en supprimant le bloc libéré.
         if (previous)
