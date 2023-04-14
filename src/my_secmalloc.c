@@ -1,10 +1,61 @@
 // cette définition permet d'accéder à mremap lorsqu'on inclue sys/mman.h
 #define _GNU_SOURCE
 #include <sys/mman.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
 #include "my_secmalloc.h"
 #include "my_secmalloc_private.h"
 
 t_block *g_base = NULL;
+
+// Fonction qui ecris les logs dans un fichier ou dans la console.
+void my_log(const char *format, ...)
+{
+    // On initialise la liste des arguments.
+    va_list args;
+    va_start(args, format);
+
+    // On obtient la taille necessaire pour stocker la chaine formatée.
+    int size_needed = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+
+    // On alloue de la mémoire sur la pile pour la chaine formatée.
+    char *formatted_str = (char *)alloca(size_needed + 1);
+
+    // On écrit la chaine formatée dans la mémoire allouée.
+    va_start(args, format);
+    vsnprintf(formatted_str, size_needed + 1, format, args);
+    va_end(args);
+
+    // On écrit la chaine formatée dans le fichier ou dans la console.
+    char *msm_output = getenv("MSM_OUTPUT");
+    if (msm_output)
+    {
+        // Si MSM_OUTPUT est définie, on écris les logs dans le fichier spécifié
+        int fd = open(msm_output, O_WRONLY | O_CREAT | O_APPEND, 0644);
+        if (fd != -1)
+        {
+            // On écrit la chaine formatée dans le fichier.
+            write(fd, formatted_str, size_needed);
+            write(fd, "\n", 1);
+            close(fd);
+        }
+        else
+        {
+            perror("Erreur lors de l'ouverture du fichier de log");
+        }
+    }
+    else
+    {
+        // Si MSM_OUTPUT n'est pas définie, écrivez les logs dans stdout
+        write(STDOUT_FILENO, formatted_str, size_needed);
+        write(STDOUT_FILENO, "\n", 1);
+    }
+}
 
 // Fonction qui permet de trouver un bloc libre de la taille demandée.
 t_block *find_free_block(t_block **last, size_t size)
@@ -33,6 +84,7 @@ t_block *request_space(t_block *last, size_t size)
     // On vérifie que l'allocation s'est bien passée.
     if (new_block == MAP_FAILED)
     {
+        my_log("Erreur lors de l'allocation de mémoire (request_space)");
         return (NULL);
     }
 
@@ -58,6 +110,7 @@ void *my_malloc(size_t size)
     // On vérifie que la taille demandée est valide.
     if (size <= 0)
     {
+        my_log("Erreur lors de l'allocation de mémoire (my_malloc) : taille invalide");
         return (NULL);
     }
 
@@ -70,6 +123,7 @@ void *my_malloc(size_t size)
         // On vérifie que l'allocation s'est bien passée, sinon on retourne NULL.
         if (!new_block)
         {
+            my_log("Erreur lors de l'allocation de mémoire (my_malloc)");
             return (NULL);
         }
 
@@ -100,6 +154,7 @@ void *my_malloc(size_t size)
             // On vérifie que l'allocation s'est bien passée, sinon on retourne NULL.
             if (!free_block)
             {
+                my_log("Erreur lors de l'allocation de mémoire (my_malloc)");
                 return (NULL);
             }
 
@@ -117,10 +172,7 @@ void my_free(void *ptr)
     // On vérifie que le pointeur est valide.
     if (!ptr)
     {
-        /**
-         * Pointeur invalide.
-         * TODO: DEBUG LOG FILE
-         * */
+        my_log("Erreur lors de la libération de mémoire (my_free) : pointeur invalide");
         return;
     }
 
@@ -141,10 +193,7 @@ void my_free(void *ptr)
         // Vérification du canari.
         if (current->canary != CANARY_VALUE)
         {
-            /**
-             * Corruption de la mémoire détectée.
-             * TODO: DEBUG LOG FILE
-             * */
+            my_log("Erreur lors de la libération de mémoire (my_free) : canari invalide");
             return;
         }
 
@@ -167,10 +216,6 @@ void my_free(void *ptr)
         return;
     }
 
-    /**
-     * Pointeur invalide.
-     * TODO: DEBUG LOG FILE
-     * */
     return;
 }
 
@@ -179,6 +224,7 @@ void *my_calloc(size_t nmemb, size_t size)
     // On vérifie que la taille demandée est valide.
     if (nmemb == 0 || size == 0)
     {
+        my_log("Erreur lors de l'allocation de mémoire (my_calloc) : taille invalide");
         return (NULL);
     }
 
@@ -209,12 +255,7 @@ void *my_realloc(void *ptr, size_t size)
     // On vérifie que la taille demandée est valide.
     if (size <= 0)
     {
-        return (NULL);
-    }
-
-    // On vérifie que l'adresse de la mémoire à réallouer est valide.
-    if (!ptr)
-    {
+        my_log("Erreur lors de la réallocation de mémoire (my_realloc) : taille invalide");
         return (NULL);
     }
 
@@ -224,6 +265,7 @@ void *my_realloc(void *ptr, size_t size)
     // On vérifie que l'allocation s'est bien passée, sinon on retourne NULL.
     if (!new_ptr)
     {
+        my_log("Erreur lors de la réallocation de mémoire (my_realloc)");
         return (NULL);
     }
 
@@ -234,7 +276,10 @@ void *my_realloc(void *ptr, size_t size)
     }
 
     // On libère l'ancienne mémoire.
-    my_free(ptr);
+    if (ptr)
+    {
+        my_free(ptr);
+    }
 
     return (new_ptr);
 }
